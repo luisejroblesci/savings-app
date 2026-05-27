@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const CATEGORIES = ['General', 'Personal', 'Auto', 'House'];
-const CURRENCIES = ['MXN', 'USD'];
 
 function App() {
-  const [spendings, setSpendings] = useState([]);
+  const [spendings, setSpendings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('spendings');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [filterCategory, setFilterCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     category: 'General',
     amount: '',
@@ -13,18 +20,19 @@ function App() {
     note: ''
   });
 
+  useEffect(() => {
+    localStorage.setItem('spendings', JSON.stringify(spendings));
+  }, [spendings]);
+
   const handleInputChange = (field, value) => {
     if (field === 'amount') {
-      // Only allow numbers and decimal point
       const numericValue = value.replace(/[^0-9.]/g, '');
-      // Prevent multiple decimal points
       const parts = numericValue.split('.');
       if (parts.length > 2) {
         return;
       }
       setFormData(prev => ({ ...prev, amount: numericValue }));
     } else if (field === 'note') {
-      // Limit to 140 characters
       if (value.length <= 140) {
         setFormData(prev => ({ ...prev, note: value }));
       }
@@ -56,8 +64,7 @@ function App() {
     };
 
     setSpendings(prev => [newSpending, ...prev]);
-    
-    // Reset form
+
     setFormData({
       category: 'General',
       amount: '',
@@ -66,19 +73,30 @@ function App() {
     });
   };
 
+  const deleteSpending = (id) => {
+    setSpendings(prev => prev.filter(s => s.id !== id));
+  };
+
   const formatAmount = (amount, currency) => {
     return `$${amount.toFixed(2)} ${currency}`;
   };
 
-  const filteredSpendings = filterCategory === 'All' 
-    ? spendings 
-    : spendings.filter(spending => spending.category === filterCategory);
+  const filteredSpendings = spendings
+    .filter(spending => filterCategory === 'All' || spending.category === filterCategory)
+    .filter(spending => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        spending.note.toLowerCase().includes(q) ||
+        spending.category.toLowerCase().includes(q)
+      );
+    });
 
   const getTotalByCategory = (category) => {
-    const categorySpending = category === 'All' 
-      ? spendings 
+    const categorySpending = category === 'All'
+      ? spendings
       : spendings.filter(spending => spending.category === category);
-    
+
     return categorySpending.reduce((total, spending) => total + spending.amount, 0);
   };
 
@@ -94,7 +112,7 @@ function App() {
       {/* Add Spending Form */}
       <div className="card">
         <h2>Add New Spending</h2>
-        
+
         <div className="form-group">
           <label htmlFor="category">Category</label>
           <select
@@ -163,7 +181,7 @@ function App() {
       <div className="card">
         <div className="spending-header">
           <h2>Your Spendings</h2>
-          
+
           {spendings.length > 0 && (
             <div className="filter-section">
               <div className="filter-controls">
@@ -183,7 +201,17 @@ function App() {
                   ))}
                 </select>
               </div>
-              
+
+              <div className="search-controls">
+                <input
+                  type="text"
+                  placeholder="Search spendings..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  data-testid="search-input"
+                />
+              </div>
+
               <div className="total-display">
                 <strong>
                   Total ({filterCategory}): {formatAmount(getTotalByCategory(filterCategory), 'MXN')}
@@ -192,7 +220,7 @@ function App() {
             </div>
           )}
         </div>
-        
+
         {filteredSpendings.length === 0 ? (
           <div className="empty-state">
             {spendings.length === 0 ? (
@@ -216,6 +244,14 @@ function App() {
                     "{spending.note}"
                   </div>
                 )}
+                <button
+                  className="delete-btn"
+                  onClick={() => deleteSpending(spending.id)}
+                  data-testid="delete-spending-btn"
+                  aria-label="Delete spending"
+                >
+                  Delete
+                </button>
               </div>
             ))}
           </>
@@ -225,4 +261,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

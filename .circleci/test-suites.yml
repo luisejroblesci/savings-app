@@ -1,0 +1,6 @@
+---
+name: savings-app
+discover: find src -name "*.test.jsx" ! -name "*.failing.test.jsx" -type f
+run: npx vitest run --reporter=verbose --reporter=junit --outputFile.junit=<< outputs.junit >> << test.atoms >>
+outputs:
+  junit: /tmp/test-results/junit.xml

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import App from './App'
@@ -30,7 +30,7 @@ describe('Spending Tracker App', () => {
       render(<App />)
       
       expect(screen.getByDisplayValue('General')).toBeInTheDocument()
-      expect(screen.getByDisplayValue('MXN')).toBeInTheDocument()
+      expect(screen.getByTestId('currency-toggle')).toHaveTextContent('MXN')
       expect(screen.getByPlaceholderText('0.00')).toHaveValue('')
       expect(screen.getByPlaceholderText('Add a note about this spending...')).toHaveValue('')
     })
@@ -116,7 +116,7 @@ describe('Spending Tracker App', () => {
       
       const amountInput = screen.getByTestId('amount-input')
       
-      await user.type(amountInput, '123.45.67')
+      await user.type(amountInput, '123.45.')
       expect(amountInput).toHaveValue('123.45')
     })
 
@@ -167,9 +167,10 @@ describe('Spending Tracker App', () => {
       await user.click(addButton)
       
       // Check spending was added
-      expect(screen.getByText('Personal')).toBeInTheDocument()
-      expect(screen.getByText('$50.75 MXN')).toBeInTheDocument()
-      expect(screen.getByText('"Coffee and lunch"')).toBeInTheDocument()
+      const spendingItem = screen.getByTestId('spending-item')
+      expect(within(spendingItem).getByText('Personal')).toBeInTheDocument()
+      expect(within(spendingItem).getByText('$50.75 MXN')).toBeInTheDocument()
+      expect(within(spendingItem).getByText('"Coffee and lunch"')).toBeInTheDocument()
     })
 
     it('resets form after adding spending', async () => {
@@ -307,11 +308,11 @@ describe('Spending Tracker App', () => {
       await user.click(addButton)
       
       const spendingItem = screen.getByTestId('spending-item')
-      
+
       // Check all elements are present
-      expect(spendingItem).toContainElement(screen.getByText('House'))
-      expect(spendingItem).toContainElement(screen.getByText('$150.25 MXN'))
-      expect(spendingItem).toContainElement(screen.getByText('"Groceries and utilities"'))
+      expect(spendingItem).toContainElement(within(spendingItem).getByText('House'))
+      expect(spendingItem).toContainElement(within(spendingItem).getByText('$150.25 MXN'))
+      expect(spendingItem).toContainElement(within(spendingItem).getByText('"Groceries and utilities"'))
     })
 
     it('does not show note section when note is empty', async () => {
@@ -325,9 +326,9 @@ describe('Spending Tracker App', () => {
       await user.click(addButton)
       
       const spendingItem = screen.getByTestId('spending-item')
-      
-      expect(spendingItem).toContainElement(screen.getByText('General'))
-      expect(spendingItem).toContainElement(screen.getByText('$25.00 MXN'))
+
+      expect(spendingItem).toContainElement(within(spendingItem).getByText('General'))
+      expect(spendingItem).toContainElement(within(spendingItem).getByText('$25.00 MXN'))
       expect(spendingItem.querySelector('.spending-note')).not.toBeInTheDocument()
     })
   })

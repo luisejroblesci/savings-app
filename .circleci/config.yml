@@ -5,15 +5,24 @@ orbs:
   node: circleci/node@5
 jobs:
   test-node:
-    # Install node dependencies and run tests
+    # Install node dependencies and run tests with CircleCI Smarter Testing
     executor: node/default
     steps:
       - checkout
       - node/install-packages:
           pkg-manager: npm
       - run:
-          name: Run tests
-          command: npm test --passWithNoTests
+          name: Install circleci-testsuite
+          command: |
+            curl -fsSL https://github.com/CircleCI-Public/circleci-testsuite-cli/releases/latest/download/circleci-testsuite_linux_amd64.tar.gz \
+              | tar -xz -C /tmp
+            sudo mv /tmp/circleci-testsuite /usr/local/bin/circleci-testsuite
+            circleci-testsuite --version
+      - run:
+          name: Run tests with Smarter Testing
+          command: circleci-testsuite exec --suite savings-app
+      - store_test_results:
+          path: /tmp/test-results
   build-node:
     # Build node project
     executor: node/default

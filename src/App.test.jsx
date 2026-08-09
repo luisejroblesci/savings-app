@@ -290,6 +290,52 @@ describe('Spending Tracker App', () => {
     it('shows correct total for all categories', () => {
       expect(screen.getByText('Total (All): $60.00 MXN')).toBeInTheDocument()
     })
+
+    it('resets to show all spendings when All Categories is selected after filtering', async () => {
+      const user = userEvent.setup()
+      const filterSelect = screen.getByTestId('category-filter')
+
+      await user.selectOptions(filterSelect, 'Personal')
+      expect(screen.getAllByTestId('spending-item')).toHaveLength(1)
+
+      await user.selectOptions(filterSelect, 'All')
+      expect(screen.getAllByTestId('spending-item')).toHaveLength(3)
+    })
+  })
+
+  describe('Spending Order', () => {
+    it('displays most recently added spending first', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      const amountInput = screen.getByTestId('amount-input')
+      const addButton = screen.getByTestId('add-spending-btn')
+
+      await user.type(amountInput, '10.00')
+      await user.click(addButton)
+
+      await user.type(amountInput, '20.00')
+      await user.click(addButton)
+
+      const spendingItems = screen.getAllByTestId('spending-item')
+      expect(spendingItems[0]).toHaveTextContent('$20.00 MXN')
+      expect(spendingItems[1]).toHaveTextContent('$10.00 MXN')
+    })
+  })
+
+  describe('Amount Formatting', () => {
+    it('formats amount with exactly 2 decimal places', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      const amountInput = screen.getByTestId('amount-input')
+      const addButton = screen.getByTestId('add-spending-btn')
+
+      await user.type(amountInput, '5')
+      await user.click(addButton)
+
+      expect(screen.getByText('$5.00 MXN')).toBeInTheDocument()
+    })
   })
 
   describe('Spending Display', () => {
